@@ -1,0 +1,9 @@
+{
+  "name": "homegrown",
+  "label": "Homegrown",
+  "description": "Backend routes for the Homegrown Desktop page: app documents and per-app data.",
+  "icon": "Sprout",
+  "version": "0.1.0",
+  "tab": { "path": "/homegrown", "hidden": true },
+  "api": "plugin_api.py"
+}

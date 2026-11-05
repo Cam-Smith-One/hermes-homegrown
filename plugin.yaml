@@ -1,0 +1,18 @@
+name: homegrown
+version: 0.1.0
+manifest_version: 2
+api_version: 1
+description: "Hermes builds you small apps that stay: trackers, logs, CRMs, checklists. Use them in Hermes Desktop, inline in chat or on the Apps page, and have Hermes read and update their data from any chat."
+author: Cam Smith (Humaie)
+license: Apache-2.0
+homepage: https://github.com/Cam-Smith-One/hermes-homegrown
+tags: [apps, desktop, productivity]
+requires_hermes: ">=0.22.6"
+provides_tools:
+  - homegrown_create_app
+  - homegrown_update_app
+  - homegrown_list_apps
+  - homegrown_read_app
+  - homegrown_app_data
+  - homegrown_delete_app
+provides_hooks: []
