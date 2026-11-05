@@ -1,0 +1,77 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
+<style>
+:root{--fg:#1d1d1f;--mut:#6e6e73;--bd:#e5e5ea;--bg:#fff;--col:#f5f5f7;--card:#fff;--ac:#2f6f4e}
+@media (prefers-color-scheme:dark){:root{--fg:#f2f2f7;--mut:#a1a1a6;--bd:#2c2c2e;--bg:#1c1c1e;--col:#242426;--card:#2c2c2e;--ac:#5fbf8a}}
+*{box-sizing:border-box}
+body{font:14px system-ui,sans-serif;margin:0;padding:16px;color:var(--fg);background:var(--bg);max-width:1100px}
+header{display:flex;align-items:baseline;gap:12px;margin-bottom:12px}
+h1{font-size:17px;margin:0}.meta{color:var(--mut);font-size:12px}
+form{display:flex;gap:8px;margin-bottom:14px}
+input{flex:1;font:inherit;padding:7px 9px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--fg)}
+button{font:inherit;padding:7px 12px;border:0;border-radius:8px;background:var(--ac);color:#fff;cursor:pointer}
+.board{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.col{background:var(--col);border-radius:10px;padding:10px;min-height:220px;transition:outline-color .15s;outline:2px dashed transparent}
+.col.over{outline-color:var(--ac)}
+.col h2{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);margin:0 0 8px;display:flex;justify-content:space-between}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:8px 10px;margin-bottom:8px;cursor:grab;display:flex;justify-content:space-between;gap:8px;animation:in .25s ease}
+.card.dragging{opacity:.4}
+.card .x{background:none;color:var(--mut);padding:0 2px;line-height:1}
+.who{display:block;color:var(--mut);font-size:12px;margin-top:2px}
+@keyframes in{from{transform:translateY(-4px);opacity:0}to{transform:none;opacity:1}}
+#err{color:#c0392b;font-size:12px;margin-top:8px}
+</style></head><body>
+<header><h1>Launch board</h1><span class="meta" id="meta"></span></header>
+<form id="f"><input name="title" placeholder="New card, e.g. Record demo video" required autocomplete="off"><button>Add</button></form>
+<div class="board" id="board"></div><div id="err"></div>
+<script>
+const COLS = [['todo', 'To do'], ['doing', 'Doing'], ['done', 'Done']]
+let dragId = null
+
+function cardEl(c) {
+  const el = document.createElement('div')
+  el.className = 'card'; el.draggable = true; el.dataset.id = c.id
+  const text = document.createElement('div')
+  text.textContent = c.title
+  if (c.owner) { const w = document.createElement('span'); w.className = 'who'; w.textContent = c.owner; text.append(w) }
+  const x = document.createElement('button'); x.className = 'x'; x.title = 'Remove'; x.textContent = '×'
+  x.onclick = () => app.remove('cards', c.id).catch(showErr)
+  el.append(text, x)
+  el.ondragstart = e => { dragId = c.id; el.classList.add('dragging'); e.dataTransfer.setData('text/plain', c.id) }
+  el.ondragend = () => { dragId = null; el.classList.remove('dragging') }
+  return el
+}
+
+async function render() {
+  try {
+    const cards = await app.list('cards')
+    board.replaceChildren(...COLS.map(([key, label]) => {
+      const mine = cards.filter(c => (c.status || 'todo') === key)
+      const col = document.createElement('section'); col.className = 'col'
+      const h = document.createElement('h2'); h.innerHTML = '<span></span><span></span>'
+      h.children[0].textContent = label; h.children[1].textContent = mine.length
+      col.append(h, ...mine.map(cardEl))
+      col.ondragover = e => { e.preventDefault(); col.classList.add('over') }
+      col.ondragleave = () => col.classList.remove('over')
+      col.ondrop = e => {
+        e.preventDefault(); col.classList.remove('over')
+        const id = dragId || e.dataTransfer.getData('text/plain')
+        if (id) app.update('cards', id, { status: key }).catch(showErr)
+      }
+      return col
+    }))
+    const done = cards.filter(c => c.status === 'done').length
+    meta.textContent = cards.length ? `${done} of ${cards.length} done` : 'Add your first card'
+    err.textContent = ''
+  } catch (e) { showErr(e) }
+}
+function showErr(e) { err.textContent = e.message }
+
+f.onsubmit = async e => {
+  e.preventDefault()
+  const title = f.title.value.trim()
+  if (!title) return
+  try { await app.add('cards', { title, status: 'todo' }); f.reset() } catch (e) { showErr(e) }
+}
+app.onChange(render); render()
+</script></body></html>
